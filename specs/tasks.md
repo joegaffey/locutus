@@ -165,3 +165,57 @@ Milestone 0 works end to end.
   - Define TTS/STT provider interfaces to allow cloud providers later.
   - Optional NDJSON append-only persistence for the conversation log.
   - _Requirements: NFR4, Open Questions 1 & 3_
+
+---
+
+## Backlog / Ideas (not yet scheduled)
+
+- [ ] Conversation lifecycle protocol — explicit start / pause / resume / end
+  - **Problem:** today the flow is implicit; agents just post messages and call
+    `/api/ask`. There's no session concept, no "get ready / speak now" cue (which
+    contributes to first-word clipping), and no clean way to pause or end.
+  - **Sketch:**
+    - Start: signal a conversation is beginning so the UI/STT can prepare (prime mic,
+      show "session active", optional countdown / "speak now" cue).
+    - Pause / resume: temporarily suspend capture (and optionally TTS) without ending.
+    - End: cleanly close the session, reset UI state, optionally summarize.
+  - **Open questions:** server-side session endpoints (`/api/session/start|pause|
+    resume|end` with state) vs. UI/agent conventions (special status messages the
+    avatar interprets); does pause gate TTS+STT or just listening; visible session
+    indicator + "speak now" cue in the UI.
+  - **Related:** would mitigate the first-word clipping seen in testing and remove
+    ambiguity about whether the mic is actively listening.
+
+- [ ] Interaction protocol alignment — AG-UI vs. A2UI (strategic)
+  - **Context:** Locutus is conceptually an **AG-UI**-style channel — an event-based,
+    bi-directional, multimodal Agent↔User Interaction protocol (agent streams events
+    to the browser via SSE; user events posted back over HTTP). The current bespoke
+    envelope (`{text, emoji}` + SSE `history`/`message`) is effectively a mini-AG-UI.
+  - **Direction:** if we want a standard, align event/message shapes toward **AG-UI**
+    (the agent↔user layer) rather than A2UI. AG-UI sits alongside MCP (agent↔tools)
+    and A2A (agent↔agent).
+  - **A2UI's role:** A2UI is a *generative UI* spec (agent streams component trees +
+    data binding for a generic renderer). NOT needed to have UI — our components are
+    a known, app-owned set. Only warranted if agents must generate arbitrary,
+    open-ended interactive UI at runtime. A2UI can layer over AG-UI if that need
+    arises; treat as optional, not core.
+
+- [ ] Renderable content types via pluggable DSL renderers
+  - **Idea:** let messages carry a content `type` + payload so the browser can render
+    rich, declarative third-party DSLs — while voice narrates a short caption. This is
+    more natural for agents (emit a standard spec) and cheaper than a generic UI
+    protocol.
+  - **Shape:** extend the message with an optional `type` + payload, e.g.
+    `{ "type": "vega-lite", "spec": {…} }`, `{ "type": "mermaid", "source": "…" }`,
+    `{ "type": "markdown", "text": "…" }`. Default `text`/`emoji` messages are spoken
+    as today; typed messages render below the avatar. The agent may still send a short
+    spoken caption alongside (voice narrates, visual renders).
+  - **Frontend:** a renderer registry keyed by `type` (text/emoji default, `vega-lite`
+    → Vega-Embed, `mermaid`, `markdown`, …). Unknown types fall back to text/notice.
+    **Vega-Lite is the reference first renderer.**
+  - **Constraints:** treat all payloads as UNTRUSTED (sanitize Markdown/HTML; prefer
+    declarative/sandboxable Vega-Lite over full Vega expression features); lazy-load
+    renderer libraries per type so the base voice UI stays light.
+  - **Why this over A2UI for content:** domain DSLs + a small renderer registry cover
+    the real cases (charts, diagrams, tables, math) without adopting a generic
+    component protocol; keeps the curl/JSON agent contract simple and voice-first.
