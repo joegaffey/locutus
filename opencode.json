@@ -1,0 +1,23 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "permission": {
+    "skill": {
+      "avatar-voice": "allow"
+    },
+    "bash": {
+      "*": "ask",
+      "curl * http://localhost:3000/api/*": "allow",
+      "curl http://localhost:3000/api/*": "allow",
+      "avatar say *": "allow",
+      "avatar state *": "allow",
+      "avatar ask *": "allow",
+      "avatar listen*": "allow",
+      "avatar pipe*": "allow",
+      "./bin/avatar say *": "allow",
+      "./bin/avatar state *": "allow",
+      "./bin/avatar ask *": "allow",
+      "./bin/avatar listen*": "allow",
+      "./bin/avatar pipe*": "allow"
+    }
+  }
+}

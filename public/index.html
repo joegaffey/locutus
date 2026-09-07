@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Agent Avatar UI</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="stage">
+      <div class="avatar" id="avatar" aria-live="polite">
+        <span class="avatar__emoji" id="avatarEmoji">🤖</span>
+      </div>
+      <p class="status" id="status">Connecting…</p>
+
+      <div class="controls">
+        <button id="micBtn" class="mic" type="button" aria-pressed="false">
+          🎤 Speak
+        </button>
+        <form id="typeForm" class="type" autocomplete="off">
+          <input
+            id="typeInput"
+            class="type__input"
+            type="text"
+            placeholder="…or type a reply and press Enter"
+            aria-label="Type a reply"
+          />
+        </form>
+      </div>
+
+      <p class="interim" id="interim" aria-live="polite"></p>
+
+      <section class="transcript" id="transcript" aria-label="Conversation transcript">
+        <h2 class="transcript__title">Transcript</h2>
+        <ul class="transcript__list" id="transcriptList"></ul>
+      </section>
+    </main>
+
+    <script src="app.js" type="module"></script>
+  </body>
+</html>

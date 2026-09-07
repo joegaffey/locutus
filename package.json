@@ -1,0 +1,22 @@
+{
+  "name": "agent-avatar-ui",
+  "version": "0.1.0",
+  "description": "A web room where CLI agents speak through an emoji avatar and a human replies by voice.",
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node --test"
+  },
+  "bin": {
+    "avatar": "bin/avatar"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  },
+  "devDependencies": {
+    "supertest": "^7.0.0"
+  }
+}
