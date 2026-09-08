@@ -6,15 +6,16 @@ on-screen **emoji avatar** that speaks it aloud, and reads back the human's spok
 replies. Integration is just shell commands, so any tool that can run a command or
 pipe its output can use it.
 
-Two ways in — use whichever fits your agent:
+Two ways in — both are for agents; use whichever fits how you invoke commands:
 
 1. **Plain `curl`** (most portable) — just HTTP to a port; no install, no PATH, works
-   from any directory. Best for wiring into agents whose shell commands you want to
-   pre-approve.
-2. **`avatar` CLI** — a tiny, dependency-free wrapper for humans and piping
-   (`tool | avatar pipe`), and shorter to type interactively.
+   from any directory. Easiest to pre-approve in an agent's command allowlist, so it's
+   the primary path in the per-tool guides.
+2. **`avatar` CLI** — an alternative integration: a tiny, dependency-free wrapper with
+   shorter commands (`avatar say/state/ask/listen`) and a `pipe` mode
+   (`tool | avatar pipe`) that speaks a command's output with zero wiring.
 
-Both hit the same endpoints; mix and match freely.
+Both hit the same endpoints and are equally valid for agents; mix and match freely.
 
 ## Setup
 

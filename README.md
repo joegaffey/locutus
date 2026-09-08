@@ -68,18 +68,30 @@ curl -s "http://localhost:3000/api/messages?since=0"
 ## For agent authors
 
 This is an accessory for existing CLI/TUI agents (Kiro, opencode, pi, shell scripts).
-Use the tiny `avatar` command to speak and to read the human's replies:
+Agents drive it two ways — both equally valid; pick whatever's easiest to invoke and
+pre-approve in your tool.
+
+**Plain `curl`** (most portable — the primary path in the per-tool guides):
+
+```bash
+# speak a line (optional emoji sets the avatar's expression)
+curl -sX POST http://localhost:3000/api/messages -H 'Content-Type: application/json' -d '{"text":"All tests passed","emoji":"✅"}'
+# ask a question and block for the spoken reply
+curl -sG http://localhost:3000/api/ask --data-urlencode 'text=What next?' --data-urlencode 'emoji=🎤'
+```
+
+**The `avatar` CLI** — an alternative integration with shorter commands and a `pipe` mode:
 
 ```bash
 npm link                                   # put `avatar` on your PATH
 avatar state 🤔                            # set expression
 avatar say "All tests passed" --emoji ✅   # speak a line
 answer="$(avatar ask "What next?" --emoji 🎤)"  # ask and wait for the spoken reply
-your-tui | avatar pipe                      # or just pipe a tool's output
+your-tui | avatar pipe                      # or pipe a tool's output straight through
 ```
 
-See [AGENTS.md](./AGENTS.md) for the full CLI reference, TUI wiring examples, and the
-raw HTTP contract.
+See [AGENTS.md](./AGENTS.md) for the full HTTP contract, the `avatar` CLI reference, and
+TUI wiring examples.
 
 ### Supported CLIs
 

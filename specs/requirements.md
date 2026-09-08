@@ -11,6 +11,12 @@ microphone; speech is transcribed and made available back to the agents.
 The goal is a real-time, voice-driven "room" where multiple headless agents and one
 human can converse.
 
+Agents integrate over a simple HTTP contract — plain `curl` is the primary, most
+portable path (easy to pre-approve in a tool's command allowlist), and the bundled
+`avatar` CLI is an equally-valid alternative integration with shorter commands and a
+`pipe` mode. Per-tool guidance and frictionless command config ship for several
+assistant CLIs (see README's Supported CLIs table).
+
 ## Actors
 
 - **CLI Agent** — A headless process (script, bot, LLM agent) that posts messages via

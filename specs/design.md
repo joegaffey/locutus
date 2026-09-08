@@ -119,20 +119,38 @@ get started.
 ### 5. Transcript panel
 - Scrolling log of all messages (agent + user) for visual reference.
 
+## Agent integration paths
+
+Agents drive the avatar two equally-valid ways over the same HTTP endpoints:
+
+- **Plain `curl`** — the most portable path (no install/PATH); easiest to pre-approve
+  in a tool's command allowlist, so it's the primary path in the per-tool guides.
+- **The `avatar` CLI** (`bin/avatar`) — an alternative integration: a dependency-free
+  wrapper with shorter commands (`say`/`state`/`ask`/`listen`) and a `pipe` mode
+  (`tool | avatar pipe`). Honors `AVATAR_URL`.
+
+Per-tool guidance + frictionless command config ship for Kiro, opencode, Claude Code,
+Gemini CLI, Copilot CLI (and any tool via `AGENTS.md`); see the README's Supported CLIs
+table for maturity.
+
 ## Data Flow
 
 **Agent → User (speak):**
 1. Agent `POST /api/agents/:id/messages { text, emoji? }` (MVP: `POST /api/messages`).
 2. Backend appends to conversation store, assigns cursor, returns `201 { id }`.
-3. Broadcast hub pushes `message` (incl. `emoji`) over WS to browsers.
+3. Broadcast hub pushes a `message` SSE event (incl. `emoji`) to subscribers (browser
+   UI + any streaming agents).
 4. Browser sets the avatar expression to `emoji`, enqueues utterance; TTS speaks it;
    avatar animates. A message with `emoji` but no `text` changes expression only.
 
 **User → Agent (reply):**
-1. User speaks → browser STT produces transcript.
+1. User speaks → browser STT produces transcript (echo of the avatar's own speech is
+   stripped; see requirements FR6).
 2. Browser `POST /api/user/messages { text }`.
-3. Backend appends as `source: "user"`, broadcasts to WS + SSE.
-4. Agents pick it up via `GET /api/messages?since=<cursor>` or `/api/stream`.
+3. Backend appends as `source: "user"`, broadcasts a `message` SSE event, and wakes any
+   pending `/api/ask` waiters.
+4. Agents pick it up via `GET /api/messages?since=<cursor>`, `GET /api/stream` (SSE), or
+   a blocking `GET /api/ask`.
 
 ## Example Agent Usage (curl)
 
@@ -159,7 +177,8 @@ curl -s "http://localhost:3000/api/messages?since=42"
 
 - Validation errors → `400` with `{ error }`.
 - Unknown route → `404`.
-- WS/SSE disconnects → client reconnects; server drops dead clients on write failure.
+- SSE disconnects → `EventSource` reconnects automatically; server drops dead clients
+  on write failure / connection close.
 - TTS/STT unavailable in browser → fall back to text display + typed input, show a notice.
 
 ## Testing Strategy
@@ -168,29 +187,35 @@ curl -s "http://localhost:3000/api/messages?since=42"
   (auto-register, defaults), request validation.
 - **API integration:** supertest against Express — post message, poll since cursor,
   user reply round-trip.
-- **Real-time:** WS client test asserting broadcast delivery and roster-on-connect.
+- **Real-time:** SSE client test asserting history-on-connect and message broadcast.
 - **Manual/browser:** TTS playback, mic capture, avatar animation (hard to automate;
   cover with a manual checklist).
 
-## Project Structure (proposed)
+## Project Structure (as built for the MVP)
 
 ```
-/agent-avatar-ui
+locutus/
   package.json
+  bin/
+    avatar               # `avatar` CLI accessory (say/state/ask/listen/pipe)
   src/
-    server.js            # Express app + WS wiring
-    api/routes.js        # REST endpoints
-    core/registry.js     # agent registry
-    core/conversation.js # conversation store
-    core/hub.js          # WS/SSE broadcast
+    server.js            # entry: wires conversation + SSE hub + app
+    app.js               # Express app: REST endpoints + /api/stream + /api/ask
+    conversation.js      # in-memory conversation store
+    hub.js               # SSE broadcast hub
   public/
-    index.html
-    app.js               # connection + UI orchestration
-    speech.js            # TTS queue + STT
-    avatars.js           # avatar rendering/animation
+    index.html           # emoji avatar UI
+    app.js               # SSE connection, TTS queue, mic/STT, echo strip, UI
     styles.css
   test/
-    conversation.test.js
-    registry.test.js
-    api.test.js
+    conversation.test.js # conversation store unit tests
+    api.test.js          # REST + /api/ask integration tests
+    stream.test.js       # SSE hub tests
+  specs/                 # requirements, design, tasks
+  AGENTS.md              # agent-facing HTTP contract + avatar CLI reference
+  .kiro/ .opencode/ .claude/ .github/ GEMINI.md gemini-policy.sample.toml
+                         # per-tool agent guidance + frictionless command config
 ```
+
+Note: the multi-agent registry (`registry.js`, `/api/agents`) is post-MVP and not yet
+built; the MVP uses a single implicit agent.
