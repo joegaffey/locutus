@@ -94,6 +94,7 @@ guidance so the assistant knows to narrate and ask for voice input.
 | **Claude Code** | `CLAUDE.md` | `.claude/settings.json` `permissions.allow` (`Bash(...)` rules) | 🟡 Built from docs, not run here |
 | **Codex CLI** | `AGENTS.md` (shared) | Runtime permission profile / sandbox (no per-command allowlist) | 🟠 Guidance only; execution is a runtime choice |
 | **Gemini CLI** | `GEMINI.md` | `~/.gemini/policies/*.toml` (`gemini-policy.sample.toml`); user-level only | 🟡 Built from docs, not run here |
+| **Copilot CLI** | `.github/copilot-instructions.md` (also reads `AGENTS.md`) | `--allow-tool='shell(curl)' --allow-tool='shell(avatar)'` at launch | 🟡 Built from docs, not run here |
 | **Other / any TUI** | `AGENTS.md` | Approve `curl`/`avatar` in that tool, or `tool \| avatar pipe` | ⚪ Works via curl/pipe; no bundled config |
 
 Legend: ✅ verified · 🟡 configured from official docs, untested here · 🟠 partial
@@ -182,6 +183,20 @@ bundled policy sample to your user policies directory (Gemini loads user-level
 mkdir -p ~/.gemini/policies
 cp gemini-policy.sample.toml ~/.gemini/policies/locutus.toml
 ```
+
+### Hands-free with Copilot CLI
+
+GitHub Copilot CLI reads **`.github/copilot-instructions.md`** (and also `AGENTS.md`) for
+project guidance — both are in this repo, so it knows to narrate progress and use
+`/api/ask` for spoken input. Pre-approve the avatar's shell calls at launch so they run
+without prompts:
+
+```bash
+copilot --allow-tool='shell(curl)' --allow-tool='shell(avatar)'
+```
+
+(Or approve each command interactively, or narrate a headless run with
+`copilot -p "…" | avatar pipe`.)
 
 ## Project layout
 
