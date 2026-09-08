@@ -81,6 +81,24 @@ your-tui | avatar pipe                      # or just pipe a tool's output
 See [AGENTS.md](./AGENTS.md) for the full CLI reference, TUI wiring examples, and the
 raw HTTP contract.
 
+### Supported CLIs
+
+Any tool that can run a shell command can drive the avatar (plain `curl` or the `avatar`
+CLI). This repo also ships per-tool config so it runs **without approval prompts**, plus
+guidance so the assistant knows to narrate and ask for voice input.
+
+| CLI | Guidance file | Frictionless command setup | Maturity |
+|-----|---------------|----------------------------|----------|
+| **Kiro** | `.kiro/agents/avatar.json` (prompt) | `toolsSettings.execute_bash.allowedCommands` (curl + `avatar`) | ✅ Verified end-to-end (live) |
+| **opencode** | `.opencode/agents/avatar.md` + `.opencode/skills/avatar-voice/SKILL.md` | `opencode.json` `permission.bash` rules | 🟡 Built from docs, not run here |
+| **Claude Code** | `CLAUDE.md` | `.claude/settings.json` `permissions.allow` (`Bash(...)` rules) | 🟡 Built from docs, not run here |
+| **Codex CLI** | `AGENTS.md` (shared) | Runtime permission profile / sandbox (no per-command allowlist) | 🟠 Guidance only; execution is a runtime choice |
+| **Gemini CLI** | `GEMINI.md` | `~/.gemini/policies/*.toml` (`gemini-policy.sample.toml`); user-level only | 🟡 Built from docs, not run here |
+| **Other / any TUI** | `AGENTS.md` | Approve `curl`/`avatar` in that tool, or `tool \| avatar pipe` | ⚪ Works via curl/pipe; no bundled config |
+
+Legend: ✅ verified · 🟡 configured from official docs, untested here · 🟠 partial
+(guidance only) · ⚪ generic path.
+
 ### Hands-free with Kiro
 
 This repo ships a Kiro agent (`.kiro/agents/avatar.json`) that pre-trusts the `avatar`
@@ -143,6 +161,26 @@ Permissions & Sandboxing docs. Or narrate a run's output with zero setup:
 
 ```bash
 codex … | avatar pipe
+```
+
+### Hands-free with Gemini CLI
+
+Gemini CLI reads **`GEMINI.md`** for project context — this repo's `GEMINI.md` tells it
+to narrate progress and use `/api/ask` for spoken input, so it works out of the box:
+
+```bash
+gemini
+# ...or narrate a headless run's output:
+gemini -p "…" | avatar pipe
+```
+
+To run the avatar's `curl`/`avatar` commands **without approval prompts**, copy the
+bundled policy sample to your user policies directory (Gemini loads user-level
+`~/.gemini/policies/*.toml`; workspace policies are disabled by default):
+
+```bash
+mkdir -p ~/.gemini/policies
+cp gemini-policy.sample.toml ~/.gemini/policies/locutus.toml
 ```
 
 ## Project layout

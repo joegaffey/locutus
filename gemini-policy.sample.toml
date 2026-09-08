@@ -1,0 +1,41 @@
+# Locutus avatar — Gemini CLI policy rules (sample)
+#
+# Gemini CLI loads policy rules from ~/.gemini/policies/*.toml (user-level).
+# Workspace .gemini/policies is disabled by default, so copy this file there:
+#
+#   mkdir -p ~/.gemini/policies
+#   cp gemini-policy.sample.toml ~/.gemini/policies/locutus.toml
+#
+# These rules auto-allow the avatar's shell calls (curl to the local server and
+# the `avatar` CLI) so they run without an approval prompt. commandPrefix matches
+# the start of the shell command; decision "allow" runs it automatically.
+
+[[rule]]
+toolName = "run_shell_command"
+commandPrefix = "curl -sX POST http://localhost:3000/api/messages"
+decision = "allow"
+priority = 100
+
+[[rule]]
+toolName = "run_shell_command"
+commandPrefix = "curl -sG http://localhost:3000/api/ask"
+decision = "allow"
+priority = 100
+
+[[rule]]
+toolName = "run_shell_command"
+commandPrefix = "curl -s http://localhost:3000/api/messages"
+decision = "allow"
+priority = 100
+
+[[rule]]
+toolName = "run_shell_command"
+commandPrefix = "avatar "
+decision = "allow"
+priority = 100
+
+[[rule]]
+toolName = "run_shell_command"
+commandPrefix = "./bin/avatar "
+decision = "allow"
+priority = 100
