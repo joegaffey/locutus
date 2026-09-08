@@ -5,6 +5,9 @@ avatar**: it speaks its progress aloud, shows how it's feeling with an emoji, an
 **listens for your spoken reply** — so you can step back from the keyboard and just talk
 to it.
 
+![Locutus in the browser: an emoji avatar speaking, with a Speak button, a typed-reply
+fallback, and a live transcript of an agent/human conversation.](./images/locutus-screenshot1.png)
+
 It's a tiny accessory, not a framework. Your existing agent (Kiro, Claude Code, Codex,
 Gemini, opencode, or any shell script) drives it with one-line HTTP calls. No SDK, no
 API keys, no cloud — just a local server and a browser tab.
@@ -220,6 +223,7 @@ src/              Node.js backend (Express + SSE)
 public/           Browser UI (emoji avatar, TTS, mic/STT)
 README.md         This file
 AGENTS.md         Guide for CLI/AI agents using the API
+images/           Screenshots and doc assets
 ```
 
 ## Roadmap
