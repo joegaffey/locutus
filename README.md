@@ -1,69 +1,59 @@
-# Agent Avatar UI
+# Locutus — give your coding agent a voice and a face
 
-A web-based "room" where CLI agents send text messages over a simple HTTP API and are
-represented by talking avatars in the browser. The browser reads each message aloud
-(text-to-speech) and animates the avatar. A human user replies by speaking into their
-microphone; the speech is transcribed and made available back to the agents.
+Your terminal agent works in silence. Locutus gives it an on-screen **talking emoji
+avatar**: it speaks its progress aloud, shows how it's feeling with an emoji, and
+**listens for your spoken reply** — so you can step back from the keyboard and just talk
+to it.
 
-> **Status: MVP working.** Milestone 0 supports a **single agent** with an **emoji
-> avatar** (🤖) as a quick end-to-end test. See [`specs/`](./specs) for requirements,
-> design, and the task plan.
+It's a tiny accessory, not a framework. Your existing agent (Kiro, Claude Code, Codex,
+Gemini, opencode, or any shell script) drives it with one-line HTTP calls. No SDK, no
+API keys, no cloud — just a local server and a browser tab.
 
-## Why
+```
+  your agent  ──curl──▶  Locutus server  ──▶  🗣️  browser speaks it
+      ▲                                          🎤  you reply out loud
+      └───────────  transcribed reply  ◀─────────────┘
+```
 
-Give headless CLI agents (scripts, bots, LLM agents) a voice and a face, and let a
-human talk back — without either side needing anything more than plain HTTP and a
-browser.
+> **Status: MVP working** — single agent, emoji avatar, in-memory. See [`specs/`](./specs).
 
-## Requirements
+## Quickstart
 
-- Node.js LTS
-- A browser that supports the Web Speech API for TTS/STT (Chrome/Edge recommended)
-- A microphone for voice replies (typing is supported as a fallback)
-- **Headphones recommended.** On speakers, the mic can hear the avatar's own
-  text-to-speech and transcribe it as your reply. The app strips the avatar's speech
-  from transcripts on a best-effort basis, but headphones eliminate this entirely and
-  give the cleanest capture.
-
-## Getting started
+**1. Start the server** (needs Node.js LTS):
 
 ```bash
-npm install
-npm start
+npm install && npm start
 ```
 
-Then open the UI:
+**2. Open the room** at <http://localhost:3000> in Chrome or Edge, and leave the tab
+focused so it can speak and listen. *(Headphones recommended — otherwise the mic can
+hear the avatar's own voice.)*
 
-```
-http://localhost:3000
-```
-
-You'll see a single emoji avatar. Anything an agent posts will be spoken aloud, and the
-avatar reacts while speaking. Agents can send an emoji with each message to set the
-avatar's expression (🤔 thinking, 🎉 celebrating, ✅ done, and so on).
-
-## The loop
-
-1. An agent posts a message via `curl` → it appears and is spoken in the browser.
-2. The emoji avatar animates while speaking.
-3. You click the mic, speak a reply, and see the live transcript.
-4. The agent reads your reply with a single `curl` request.
-
-## Quick test
-
-Post a message (spoken in the browser, with an expression):
+**3. Make your agent talk.** Any agent that can run a shell command can drive the avatar
+with plain `curl`. The whole contract is three calls:
 
 ```bash
+# Speak a line (the emoji sets the avatar's expression)
 curl -sX POST http://localhost:3000/api/messages \
   -H 'Content-Type: application/json' \
-  -d '{"text":"Hello! I am your friendly agent.","emoji":"👋"}'
-```
+  -d '{"text":"Running the test suite","emoji":"🏃"}'
 
-Read user replies since a cursor:
+# Ask the human a question and wait for their spoken reply (prints {"reply":"..."})
+curl -sG http://localhost:3000/api/ask \
+  --data-urlencode 'text=Which environment should I deploy to?' --data-urlencode 'emoji=🎤'
 
-```bash
+# Or poll for replies yourself, since a cursor
 curl -s "http://localhost:3000/api/messages?since=0"
 ```
+
+To wire this into a real agent, tell it (in its system prompt / instructions) to call
+those endpoints — narrate progress with `POST /api/messages` and ask for input with
+`GET /api/ask`. That's it; the agent now has a voice and can hear you. This repo already
+ships that guidance and no-prompt command config for several popular CLIs — see
+[Supported CLIs](#supported-clis) below.
+
+Prefer a wrapper over raw `curl`? There's also an [`avatar` CLI](#for-agent-authors) —
+an alternative integration with shorter commands and a `pipe` mode.
 
 ## For agent authors
 
@@ -209,6 +199,17 @@ copilot --allow-tool='shell(curl)' --allow-tool='shell(avatar)'
 
 (Or approve each command interactively, or narrate a headless run with
 `copilot -p "…" | avatar pipe`.)
+
+## Requirements & notes
+
+- **Node.js LTS** for the server.
+- A **Chromium browser** (Chrome/Edge) — TTS/STT use the Web Speech API.
+- A **microphone** for voice replies; typing is supported as a fallback.
+- **Headphones recommended.** On speakers the mic can hear the avatar's own speech and
+  transcribe it as your reply. Locutus strips the avatar's speech from transcripts on a
+  best-effort basis, but headphones eliminate it entirely for the cleanest capture.
+- **In-memory (MVP):** restarting the server clears the conversation.
+- Point the server elsewhere with `PORT=…`, and the `avatar` CLI with `AVATAR_URL=…`.
 
 ## Project layout
 
