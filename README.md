@@ -114,6 +114,37 @@ There's also an opencode **skill** at `.opencode/skills/avatar-voice/SKILL.md`, 
 agent (including the default Build agent) can discover and load the avatar instructions
 on demand — no need to switch to the `avatar` agent.
 
+### Hands-free with Claude Code
+
+This repo ships Claude Code config too: `.claude/settings.json` pre-approves the avatar
+`curl`/`avatar` commands (no permission prompts), and `CLAUDE.md` tells Claude to
+narrate progress and use `/api/ask` for spoken input. Just run Claude Code in the repo:
+
+```bash
+claude
+# ...or narrate a headless run's output:
+claude -p "…" | avatar pipe
+```
+
+Make sure the server is running (`npm start`) and the browser tab is open.
+
+### Hands-free with Codex CLI
+
+Codex reads **`AGENTS.md`** for project guidance, and this repo's `AGENTS.md` already
+documents the avatar (the `curl` HTTP contract, `/api/ask`, and the `avatar` CLI) — so
+Codex can drive the avatar with no extra files.
+
+Codex gates command execution through its **permission profiles / sandbox** rather than
+a per-command allowlist, so "frictionless" is a runtime choice you make when you launch
+it (approve the avatar's `curl` calls, and allow local network access to
+`localhost:3000`). Pick the approval/sandbox mode you're comfortable with via
+`/permissions` in the CLI or defaults in `~/.codex/config.toml` — see Codex's
+Permissions & Sandboxing docs. Or narrate a run's output with zero setup:
+
+```bash
+codex … | avatar pipe
+```
+
 ## Project layout
 
 ```
