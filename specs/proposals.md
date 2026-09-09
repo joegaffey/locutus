@@ -1,0 +1,206 @@
+# Proposals — post-MVP design
+
+Forward-looking design for Locutus beyond the MVP. Each proposal is a place for the
+thinking to live: the problem, decisions locked, options considered, open questions, and
+(where useful) an implementation sketch. Nothing here is built yet.
+
+- `requirements.md` / `design.md` describe the **MVP as built**.
+- `tasks.md` is the **status checklist** — it points here for each proposal.
+- This file is where designs **evolve** before they're scheduled.
+
+Status legend: 🔜 near-term priority · 💡 idea · 🧭 strategic direction.
+
+---
+
+## P1 — Conversational ease: walkie-talkie mode + turn cues  🔜
+
+**Problem (from user testing).** Cross-talk: (1) the avatar and user talk over each
+other, and (3) the user is unsure when it's their turn. Root cause: turn-taking is
+implicit, and the always-on mic + automatic TTS mute is fiddly — prior attempts at
+automatic mic control caused echo, first-word clipping, and recognizer-restart races.
+
+**Walkie-talkie mode (new, opt-in).** An explicit, user-controlled mic mode offered as a
+**mode** — not a replacement for the continuous mic.
+
+- **Latched toggle, NOT press-and-hold:** click to start talking (indicator → 🔴
+  "Listening — click when done"), click again to send. Latching avoids the
+  pointerdown/up event races that broke the earlier push-to-talk attempt; and because
+  the user clicks *then* speaks, `recognition.start()` has warmed up — fixing the
+  first-word clipping.
+- The mic is only open during the explicit "talking" window, so it can't fight the
+  avatar → eliminates cross-talk (#1) by construction and gives a concrete "my turn"
+  action (#3).
+
+**A — turn cue.** On handoff to the user (avatar finished / ready for input), make it
+unmistakable: status → "Your turn"/"Ready", avatar → 🎤, optional soft chime.
+
+**C — persistent state label.** Always-visible turn state (Speaking / Ready / Talking)
+so the user is never guessing.
+
+**Hands-free (continuous) mode** remains the **default**, including the TTS-mute +
+best-effort echo strip; monitor for improvements. Walkie-talkie is the opt-in
+alternative when cross-talk matters.
+
+**Decisions locked:** latched (not hold) · a mode, not a replacement, hands-free is
+default · keep echo-mute for hands-free · scope is turn-taking UX only (the lifecycle
+protocol P4 stays separate) · spec-only for now.
+
+---
+
+## P2 — Inbound rich IO: paste/drop images & files via the browser  💡
+
+**Insight.** A CLI is a text-only pipe — you can't paste an image or drop a file into a
+terminal. The browser is a first-class IO surface that handles all of it. Since Locutus
+already has a browser tab open beside the agent, it can be the agent's **input bridge**
+for content the CLI can't accept. This is the **input-direction complement** to P3
+(agent→user rendering); here the browser contributes rich content user→agent.
+
+**Killer use case.** Paste a **screenshot** (mockup, diagram, error screen) to a coding
+agent — hugely useful and impossible in a raw terminal. Also drag-and-drop files (logs,
+CSV, PDF, assets), large/rich text blocks, general clipboard.
+
+**Message shape.** A user message carries a content key (same key-as-type model as P3),
+e.g. `{ "source":"user", "image":"/uploads/abc.png", "text":"why is this misaligned?" }`
+— may pair with spoken/typed text. Agents consume it via the existing
+poll / stream / `GET /api/messages` flow.
+
+**Server implication.** A step up from today's in-memory, text-only model: the server
+gains a small **upload/storage** responsibility — the browser uploads the file, the
+server stores it and hands the agent a **file path or URL** in the user message.
+(Alternative for small images: inline data URI — simpler, no storage, but bloats the
+log; prefer upload+path for anything non-trivial.)
+
+**Implementation sketch.**
+
+```
+1. User copies a screenshot → OS clipboard holds image data
+2. Focus the Locutus tab, Ctrl/Cmd-V
+3. Browser `paste` handler grabs the image blob from clipboardData
+4. Browser POSTs the blob to the server
+5. Server saves it, returns { path, url }
+6. Server appends a user message carrying the image reference (+ optional caption)
+7. Agent (polling/streaming) sees the message and reads the image from the path/URL
+```
+
+- **Capture (browser):** `paste` event (`clipboardData.items`, `image/*` → `getAsFile()`);
+  `drop` event for drag-and-drop; `<input type=file>` as a third entry — all funnel to
+  the same upload.
+- **Upload (server):** `POST /api/upload` (multipart or raw body) → write to `uploads/`
+  with a safe generated name → return `{ url: "/uploads/abc.png", path: "/abs/.../abc.png" }`.
+- **Reference handed to the agent:** provide **both** path and URL.
+  - **Filesystem path** — best for a *local* agent: it reads the file directly with its
+    normal file-read tool. This is the elegant part — the filesystem is the shared
+    medium, so "paste a screenshot" becomes "here's a file path", which every coding
+    agent already knows how to consume. No base64 in the log, no special agent-side
+    image handling.
+  - **URL** — for remote/browser-fetchable cases.
+- **Agent guidance:** one line in `AGENTS.md` — "user messages may include an `image`
+  path; read it if present."
+
+**Local vs remote.** Path-passing works when the agent shares a filesystem with the
+server (the common local case). Remote agents use the URL and fetch it (network/auth
+considerations). **Optimize for local first.**
+
+**UX.** Paste into the room, drag-and-drop onto the avatar/transcript, or a file-picker;
+show a thumbnail/chip in the transcript so the user sees what was sent.
+
+**Security.** Untrusted uploads — validate MIME/size, cap size, sanitize/generate
+filenames, store outside any executable path, define retention/cleanup, and note the
+agent will read whatever path it's handed.
+
+**Minimal first version.** `paste` handler → `POST /api/upload` → user message with
+`image` path → transcript thumbnail → one line of agent guidance.
+
+**Why it may outrank P3 (output rendering).** "Paste a screenshot to my CLI agent" is a
+frequently-wished-for capability with no good terminal-native answer. Voice solves
+"don't want to type"; this solves "can't input this as text".
+
+**Deferred / spec-only:** pairs with P3; needs the upload/storage decision before building.
+
+---
+
+## P3 — Renderable content types (content-typed message keys + built-in renderers)  💡
+
+**Idea.** Let a message's **content key name the content type**, so the browser can
+render media and declarative DSLs while voice narrates a short caption. Cleaner than a
+separate `type`+payload envelope, and additive to today's `text`/`emoji`.
+
+**Message model.** The payload key *is* the type — `{ "text": "…" }` (spoken, as today),
+`{ "image": "https://…/chart.png" }`, `{ "vega": { …spec… } }`, plus `mermaid`,
+`markdown`, etc. `text` and `emoji` may accompany any content key (avatar speaks the
+caption, the content renders below). **One content key per message** besides text/emoji
+(define precedence or reject if multiple). Validation on `POST /api/messages` becomes
+"at least one recognized content key present."
+
+> **Note on `video`:** dropped from the core set — coding agents don't generate video
+> and rarely reference it, and it clashes with voice-first. Trivially addable later
+> under the same key-as-type model if a real case (e.g. E2E test recordings) appears.
+
+**Renderers are BUILT-IN, not pluggable** — a fixed set the app ships. Frontend has a
+renderer registry keyed on which content field is present; unknown keys fall back to a
+caption/link/notice. **`image` is the smallest first renderer; `vega` (Vega-Lite) the
+first DSL.**
+
+**Capability discovery — B1 (server-declared).** Add `GET /api/capabilities` returning
+the server's declared, built-in content-type list (a constant matching the bundled UI),
+e.g. `{ "contentTypes": ["text","emoji","image","vega"] }`. This lets **AGENTS.md stay
+concise** — it references `/api/capabilities` as the source of truth instead of
+enumerating (and drifting on) the type list.
+
+> **B1 vs B2 (decided: B1).** B2 = browsers report their renderers on connect and the
+> server returns the intersection. Rejected: renderers are built-in and ship with the
+> server, so a server-declared constant is honest and far simpler. Revisit only if
+> pluggable renderers or version-skew handling are ever needed.
+
+**Server stays dumb:** stores/broadcasts whatever content keys arrive (light
+validation); the browser owns rendering. Rides the existing SSE channel.
+
+**Constraints.** Treat all payloads as UNTRUSTED (validate `image` as URL/data-URI;
+sanitize Markdown/HTML; prefer sandboxable Vega-Lite over full Vega). Transcript shows a
+sensible representation (thumbnail/link/caption). `/api/ask` remains speech-only.
+
+**Why this over A2UI for content.** Built-in content types + a small renderer registry
+cover the real cases (charts, diagrams, media, tables, math) without a generic component
+protocol; keeps the curl/JSON contract simple and voice-first.
+
+**Deferred:** design locked; implement alongside the first renderers (`image`, then `vega`).
+
+---
+
+## P4 — Conversation lifecycle protocol: start / pause / resume / end  💡
+
+**Problem.** Today the flow is implicit; agents just post messages and call `/api/ask`.
+There's no session concept, no "get ready / speak now" cue (which contributes to
+first-word clipping), and no clean way to pause or end.
+
+**Sketch.**
+- **Start:** signal a conversation is beginning so the UI/STT can prepare (prime mic,
+  show "session active", optional countdown / "speak now" cue).
+- **Pause / resume:** temporarily suspend capture (and optionally TTS) without ending.
+- **End:** cleanly close the session, reset UI state, optionally summarize.
+
+**Open questions.** Server-side session endpoints (`/api/session/start|pause|resume|end`
+with state) vs. UI/agent conventions (special status messages the avatar interprets);
+does pause gate TTS+STT or just listening; visible session indicator + "speak now" cue.
+
+**Related.** Overlaps with P1 (turn cues); would mitigate first-word clipping and remove
+ambiguity about whether the mic is actively listening. P1 is the focused near-term slice;
+P4 is the fuller protocol.
+
+---
+
+## P5 — Interaction protocol alignment: AG-UI vs. A2UI  🧭
+
+**Context.** Locutus is conceptually an **AG-UI**-style channel — an event-based,
+bi-directional, multimodal Agent↔User Interaction protocol (agent streams events to the
+browser via SSE; user events posted back over HTTP). The current bespoke envelope
+(`{text, emoji}` + SSE `history`/`message`) is effectively a mini-AG-UI.
+
+**Direction.** If we want a standard, align event/message shapes toward **AG-UI** (the
+agent↔user layer), which sits alongside MCP (agent↔tools) and A2A (agent↔agent).
+
+**A2UI's role.** A2UI is a *generative UI* spec (agent streams component trees + data
+binding for a generic renderer). NOT needed to have UI — our components are a known,
+app-owned set (see P3). Only warranted if agents must generate arbitrary, open-ended
+interactive UI at runtime. A2UI can layer over AG-UI if that need arises; treat as
+optional, not core.
