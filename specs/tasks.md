@@ -170,6 +170,35 @@ Milestone 0 works end to end.
 
 ## Backlog / Ideas (not yet scheduled)
 
+- [ ] Conversational ease — walkie-talkie mode + turn cues (NEAR-TERM PRIORITY)
+  - **Problem (from user testing):** cross-talk — (1) the avatar and user talk over
+    each other, and (3) the user is unsure when it's their turn to speak. Root cause:
+    turn-taking is implicit and the always-on mic + automatic TTS mute is fiddly (prior
+    attempts at automatic mic control caused echo, first-word clipping, and restart
+    races).
+  - **Walkie-talkie mode (new, alongside hands-free):** an explicit, user-controlled
+    mic mode offered as a **mode** (not a replacement for the current continuous mic).
+    - **Latched toggle**, NOT press-and-hold: click to start talking (indicator →
+      🔴 "Listening — click when done"), click again to send. Latching avoids the
+      pointerdown/up event races that broke the earlier push-to-talk attempt, and
+      because the user clicks *then* speaks, `recognition.start()` has warmed up — which
+      fixes the first-word clipping.
+    - The mic is only open during the explicit "talking" window, so it can't fight the
+      avatar → eliminates cross-talk (#1) by construction and gives a concrete "my turn"
+      action (#3).
+  - **A — turn cue:** on handoff to the user (avatar finished / ready for input), make
+    it unmistakable: status → "Your turn"/"Ready", avatar → 🎤, optional soft chime.
+  - **C — persistent state label:** always-visible turn state (Speaking / Ready /
+    Talking) so the user is never guessing.
+  - **Hands-free (continuous) mode:** remains the **default**, including the TTS-mute +
+    best-effort echo strip; monitor for improvements. Walkie-talkie is an opt-in
+    alternative the user can switch to when cross-talk matters.
+  - **Scope:** focused turn-taking UX only — the fuller lifecycle protocol (start/pause/
+    resume/end) below remains separate.
+  - **Decisions locked:** latched (not hold) · mode, not replacement, **hands-free is
+    default** · keep echo-mute for hands-free · spec-only for now.
+
+
 - [ ] Conversation lifecycle protocol — explicit start / pause / resume / end
   - **Problem:** today the flow is implicit; agents just post messages and call
     `/api/ask`. There's no session concept, no "get ready / speak now" cue (which
