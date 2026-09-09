@@ -71,11 +71,22 @@ components are a known, app-owned set.
 component/UI protocol, Locutus carries rich content by **naming the media/content type
 on the message itself** (e.g. `text`, `image`, `vega`), rendered by a small set of
 built-in renderers. This keeps the agent contract to plain HTTP + JSON, stays
-voice-first, and avoids the complexity of a generative-UI system. A2UI would only be
-warranted if agents ever had to generate arbitrary, open-ended interactive UI at
-runtime — and even then it could layer over the AG-UI-style channel rather than replace
-it. (The content-type mechanism itself is specified in [`proposals.md`](./proposals.md)
-P3.)
+voice-first, and avoids the complexity of a generative-UI system. (The content-type
+mechanism itself is specified in [`proposals.md`](./proposals.md) P3.)
+
+**If A2UI is ever wanted, it would be a separate optional protocol — not a content
+type.** The media-type keys are one-shot, stateless, render-only (agent → user). A2UI is
+fundamentally different: a *stateful, bidirectional* protocol — a stream of surface
+operations (`createSurface` / `updateComponents` / `updateDataModel` / `deleteSurface`),
+a live data model with two-way binding, and actions/callbacks routed back to the agent.
+That cannot be modelled honestly as a `{ "a2ui": … }` content key (which assumes a
+single render-and-forget payload); it needs its own surface lifecycle, data-model sync,
+and action routing. So Locutus would "also speak A2UI" as a **parallel optional protocol
+layer** riding alongside the message stream (A2UI can layer over an AG-UI-style channel),
+used for full interactive, agent-generated surfaces — while the media-type mechanism
+continues to cover lightweight rich content. This is deliberately **not built**: it is
+gated on real demand — an agent that actually emits A2UI *and* a need for interactive,
+data-bound UI that voice + media-types can't cover.
 
 ## Backend Components
 
