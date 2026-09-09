@@ -54,6 +54,29 @@ Rationale: keep the agent contract dead-simple (plain HTTP + JSON) so any langua
 shell can drive it, and keep TTS/STT in the browser so no cloud account is required to
 get started.
 
+## Architectural positioning (relation to agent-UI standards)
+
+Locutus is conceptually an **AG-UI**-style channel: an event-based, bi-directional,
+multimodal *Agent↔User Interaction* layer. The agent streams events to the browser (SSE)
+and user events are posted back over HTTP — the current envelope (`{ text, emoji }` +
+SSE `history`/`message`) is effectively a mini-AG-UI. AG-UI sits alongside MCP
+(agent↔tools) and A2A (agent↔agent). If Locutus ever adopts a standard for its
+agent↔user channel, AG-UI is the natural direction.
+
+**A2UI** is a different thing — a *generative UI* spec where the agent streams component
+trees + data binding for a generic renderer. Locutus does **not** need it: our UI
+components are a known, app-owned set.
+
+**Conclusion — prefer a simple media-type-based protocol.** Rather than a generic
+component/UI protocol, Locutus carries rich content by **naming the media/content type
+on the message itself** (e.g. `text`, `image`, `vega`), rendered by a small set of
+built-in renderers. This keeps the agent contract to plain HTTP + JSON, stays
+voice-first, and avoids the complexity of a generative-UI system. A2UI would only be
+warranted if agents ever had to generate arbitrary, open-ended interactive UI at
+runtime — and even then it could layer over the AG-UI-style channel rather than replace
+it. (The content-type mechanism itself is specified in [`proposals.md`](./proposals.md)
+P3.)
+
 ## Backend Components
 
 ### 1. HTTP API (Express)

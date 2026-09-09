@@ -171,7 +171,7 @@ Milestone 0 works end to end.
 ## Backlog / Ideas (not yet scheduled)
 
 Post-MVP design lives in [`proposals.md`](./proposals.md); this list is just status +
-pointers. Legend: 🔜 near-term priority · 💡 idea · 🧭 strategic.
+pointers. Legend: 🔜 near-term priority · 💡 idea.
 
 - [ ] **P1 — Conversational ease: walkie-talkie mode + turn cues** 🔜 — opt-in latched
   walkie-talkie mic + "your turn" cue + state label; hands-free stays default. Fixes the
@@ -184,5 +184,6 @@ pointers. Legend: 🔜 near-term priority · 💡 idea · 🧭 strategic.
   [proposals.md#p3](./proposals.md).
 - [ ] **P4 — Conversation lifecycle protocol** 💡 — explicit start/pause/resume/end;
   fuller protocol behind P1's focused slice. See [proposals.md#p4](./proposals.md).
-- [ ] **P5 — Interaction protocol alignment (AG-UI vs A2UI)** 🧭 — align toward AG-UI;
-  A2UI only if agent-generated UI is ever needed. See [proposals.md#p5](./proposals.md).
+
+Architectural positioning (AG-UI vs. A2UI; prefer a simple media-type-based protocol) is
+in [`design.md`](./design.md).

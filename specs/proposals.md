@@ -8,7 +8,11 @@ thinking to live: the problem, decisions locked, options considered, open questi
 - `tasks.md` is the **status checklist** — it points here for each proposal.
 - This file is where designs **evolve** before they're scheduled.
 
-Status legend: 🔜 near-term priority · 💡 idea · 🧭 strategic direction.
+Status legend: 🔜 near-term priority · 💡 idea.
+
+> Architectural positioning (AG-UI vs. A2UI, and why a simple media-type-based protocol)
+> lives in [`design.md`](./design.md), since it's commentary on the architecture rather
+> than a discrete proposal.
 
 ---
 
@@ -187,20 +191,3 @@ does pause gate TTS+STT or just listening; visible session indicator + "speak no
 ambiguity about whether the mic is actively listening. P1 is the focused near-term slice;
 P4 is the fuller protocol.
 
----
-
-## P5 — Interaction protocol alignment: AG-UI vs. A2UI  🧭
-
-**Context.** Locutus is conceptually an **AG-UI**-style channel — an event-based,
-bi-directional, multimodal Agent↔User Interaction protocol (agent streams events to the
-browser via SSE; user events posted back over HTTP). The current bespoke envelope
-(`{text, emoji}` + SSE `history`/`message`) is effectively a mini-AG-UI.
-
-**Direction.** If we want a standard, align event/message shapes toward **AG-UI** (the
-agent↔user layer), which sits alongside MCP (agent↔tools) and A2A (agent↔agent).
-
-**A2UI's role.** A2UI is a *generative UI* spec (agent streams component trees + data
-binding for a generic renderer). NOT needed to have UI — our components are a known,
-app-owned set (see P3). Only warranted if agents must generate arbitrary, open-ended
-interactive UI at runtime. A2UI can layer over AG-UI if that need arises; treat as
-optional, not core.
