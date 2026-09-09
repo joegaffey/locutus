@@ -198,6 +198,37 @@ Milestone 0 works end to end.
   - **Decisions locked:** latched (not hold) · mode, not replacement, **hands-free is
     default** · keep echo-mute for hands-free · spec-only for now.
 
+- [ ] Inbound rich IO — paste/drop images & files via the browser
+  - **Insight:** a CLI is a text-only pipe — you **can't paste an image or drop a file
+    into a terminal**. The browser is a first-class IO surface that handles all of it.
+    Since Locutus already has a browser tab open beside the agent, it can act as the
+    agent's input bridge for content the CLI can't accept. This is the **input-direction
+    complement** to the content-typed message model (agent→user rendering); here the
+    browser contributes rich content user→agent.
+  - **Killer use case:** paste a **screenshot** (mockup, diagram, error screen) to a
+    coding agent — hugely useful and impossible in a raw terminal. Also drag-and-drop
+    files (logs, CSV, PDF, assets), large/rich text blocks, general clipboard.
+  - **Message shape:** a user message carries a content key (same key-as-type model),
+    e.g. `{ "source":"user", "image":"/uploads/abc.png", "text":"take a look at this" }`
+    — may pair with spoken/typed text ("have a look at this" said aloud + the pasted
+    image). Agents consume it via the same poll/stream/`/api/messages` flow.
+  - **Server implication:** this is a step up from today's in-memory, text-only model —
+    the server gains a small **upload/storage** responsibility: the browser uploads the
+    pasted/dropped file, the server stores it and hands the agent a **file path or URL**
+    in the user message. (Alternative for small images: inline data URI — simpler, no
+    storage, but bloats the log; prefer upload+path for anything non-trivial.)
+  - **UX:** paste (Ctrl/Cmd-V) into the room, drag-and-drop onto the avatar/transcript,
+    or a file-picker button; show a thumbnail/chip in the transcript so the user sees
+    what was sent.
+  - **Security:** untrusted uploads — validate type/size, cap size, store outside the
+    web root or with safe names, define retention/cleanup, and consider that the agent
+    will read whatever path it's handed.
+  - **Why it may outrank output rendering:** "paste a screenshot to my CLI agent" is a
+    frequently-wished-for capability with no good terminal-native answer; voice solves
+    "don't want to type", this solves "can't input this as text".
+  - **Deferred / spec-only:** pairs with the content-types work; needs the upload/storage
+    decision before building.
+
 
 - [ ] Conversation lifecycle protocol — explicit start / pause / resume / end
   - **Problem:** today the flow is implicit; agents just post messages and call
