@@ -71,6 +71,8 @@ some-command | ./bin/avatar pipe
 - Keep spoken lines short and plain — they're read aloud. Don't speak large code or tables.
 - Use emoji for state, text for speech; one thought per line.
 - Narration is optional; still do the task and report normally in chat.
+- Pasted images: a user message may include an `image` (absolute file path) when the human
+  pastes a screenshot. If present, read that path with your file-read tool to view it.
 - If the server is unreachable, continue without the avatar rather than blocking.
 
 ## Suggested emoji

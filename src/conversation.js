@@ -18,10 +18,11 @@ export class Conversation {
 
   /**
    * Append a message to the log.
-   * @param {{ source: "agent"|"user", text?: string, emoji?: string|null }} msg
-   * @returns {{id:number,cursor:number,source:string,text:string,emoji:string|null,ts:number}}
+   * @param {{ source: "agent"|"user", text?: string, emoji?: string|null,
+   *           image?: string|null, url?: string|null }} msg
+   * @returns {object}
    */
-  append({ source, text = "", emoji = null }) {
+  append({ source, text = "", emoji = null, image = null, url = null }) {
     this._cursor += 1;
     const message = {
       id: this._cursor,
@@ -31,6 +32,10 @@ export class Conversation {
       emoji: emoji ?? null,
       ts: Date.now(),
     };
+    // Optional rich-content fields (e.g. a pasted image). Only attached when
+    // present so plain text/emoji messages keep their existing shape.
+    if (image) message.image = image; // absolute filesystem path (for local agents)
+    if (url) message.url = url; //       browser-fetchable URL (served by the app)
     this.messages.push(message);
     if (this.messages.length > this.max) {
       this.messages.splice(0, this.messages.length - this.max);

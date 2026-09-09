@@ -49,4 +49,6 @@ Guidelines:
 - Keep spoken lines short and plain; they are read aloud. Don't speak large code or tables.
 - Use emoji for state, text for speech. One thought per line.
 - Speaking is optional narration — still do the actual task and report normally in chat.
+- Pasted images: a user message may include an `image` (absolute file path) when the human
+  pastes a screenshot. If present, read that path with your file-read tool to view it.
 - If the server is unreachable, just continue without the avatar; don't block on it.

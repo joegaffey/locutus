@@ -184,6 +184,9 @@ pointers. Legend: 🔜 near-term priority · 💡 idea.
   [proposals.md#p3](./proposals.md).
 - [ ] **P4 — Conversation lifecycle protocol** 💡 — explicit start/pause/resume/end;
   fuller protocol behind P1's focused slice. See [proposals.md#p4](./proposals.md).
+- [ ] **P6 — Consolidate per-tool agent guidance** 💡 — make AGENTS.md the single
+  contract source; slim per-tool files to trust config + a pointer. See
+  [proposals.md#p6](./proposals.md).
 
 Architectural positioning (AG-UI vs. A2UI; prefer a simple media-type-based protocol) is
 in [`design.md`](./design.md).

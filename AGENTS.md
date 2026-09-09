@@ -171,6 +171,12 @@ Start at `since=0`; filter `source == "user"` for just the human's speech.
 curl -s "http://localhost:3000/api/messages?since=0"
 ```
 
+**Pasted images.** A user message may include an `image` (absolute file path) and `url`
+when the human pastes a screenshot into the room — e.g.
+`{ "source":"user", "text":"why is this misaligned?", "image":"/…/uploads/x.png", "url":"/uploads/x.png" }`.
+If you're running on the same machine, **read the `image` path** with your normal
+file-read tool to view it; otherwise fetch the `url`.
+
 ### Ask a question and block for the reply
 
 ```

@@ -51,7 +51,12 @@ protocol P4 stays separate) · spec-only for now.
 
 ---
 
-## P2 — Inbound rich IO: paste/drop images & files via the browser  💡
+## P2 — Inbound rich IO: paste/drop images & files via the browser  🔨
+
+**Status:** image **paste** shipped (v1). `POST /api/upload` stores the image and
+records a user message with both `image` (absolute path) and `url`; the transcript shows
+a thumbnail. Remaining: drag-and-drop, file-picker, non-image files, staged caption UI,
+and the UI storage-dir setting.
 
 **Insight.** A CLI is a text-only pipe — you can't paste an image or drop a file into a
 terminal. The browser is a first-class IO surface that handles all of it. Since Locutus
@@ -108,18 +113,20 @@ considerations). **Optimize for local first.**
 **UX.** Paste into the room, drag-and-drop onto the avatar/transcript, or a file-picker;
 show a thumbnail/chip in the transcript so the user sees what was sent.
 
-**Security.** Untrusted uploads — validate MIME/size, cap size, sanitize/generate
-filenames, store outside any executable path, define retention/cleanup, and note the
-agent will read whatever path it's handed.
+**Storage location (as built).** Resolved in one place (`src/config.js`): default
+`<os tmpdir>/locutus/uploads` (ephemeral, no repo pollution, matches the in-memory
+ethos), overridable via the `LOCUTUS_DATA_DIR` env var. **Eventually a UI setting** the
+user sets, applied server-side, with precedence: UI setting → `LOCUTUS_DATA_DIR` →
+default. That likely arrives with a general settings mechanism (none exists yet), so it
+is deferred; the single config point makes adding it later a small change.
 
-**Minimal first version.** `paste` handler → `POST /api/upload` → user message with
-`image` path → transcript thumbnail → one line of agent guidance.
+**Security.** Untrusted uploads — validate MIME/size, cap size (10 MB), sanitize/
+generate filenames (UUID, never client-supplied), store outside any executable path,
+define retention/cleanup, and note the agent will read whatever path it's handed.
 
 **Why it may outrank P3 (output rendering).** "Paste a screenshot to my CLI agent" is a
 frequently-wished-for capability with no good terminal-native answer. Voice solves
 "don't want to type"; this solves "can't input this as text".
-
-**Deferred / spec-only:** pairs with P3; needs the upload/storage decision before building.
 
 ---
 
@@ -190,4 +197,27 @@ does pause gate TTS+STT or just listening; visible session indicator + "speak no
 **Related.** Overlaps with P1 (turn cues); would mitigate first-word clipping and remove
 ambiguity about whether the mic is actively listening. P1 is the focused near-term slice;
 P4 is the fuller protocol.
+
+---
+
+## P6 — Consolidate per-tool agent guidance  💡 (maintenance)
+
+**Problem.** The avatar guidance is duplicated across six per-tool files (`.kiro/agents/
+avatar.json`, `.opencode/agents/avatar.md`, `.opencode/skills/avatar-voice/SKILL.md`,
+`CLAUDE.md`, `GEMINI.md`, `.github/copilot-instructions.md`) plus `AGENTS.md`. Every new
+capability (e.g. the pasted-image note) has to be fanned out to all of them — a drift/
+maintenance smell.
+
+**Idea.** Make **`AGENTS.md` the single source of the HTTP/behaviour contract**, and slim
+each per-tool file to only its *tool-specific* bits: the frictionless command config
+(trust rules / permissions / launch flags) and a one-line pointer to `AGENTS.md` for the
+contract. Future capability docs then land once, in `AGENTS.md`.
+
+**Caveat.** Not every tool auto-reads `AGENTS.md` (Kiro's prompt is inline JSON; Codex
+and Copilot do read it). So the per-tool file may still need a short "see AGENTS.md"
+nudge or a minimal inlined summary rather than relying on the tool to load it. Weigh
+per tool.
+
+**Deferred / spec-only.** Low urgency; do it when the duplication next bites or before
+adding another CLI.
 

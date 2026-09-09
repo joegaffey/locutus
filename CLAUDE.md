@@ -40,6 +40,8 @@ work and are pre-approved.)
 - Keep spoken lines short and plain — they're read aloud. Don't speak large code or tables.
 - Use emoji for state, text for speech; one thought per line.
 - Narration is optional — still do the actual task and report normally.
+- **Pasted images:** a user message may include an `image` (absolute file path) when the
+  human pastes a screenshot. If present, read that path with your file-read tool to view it.
 - If the server is unreachable, just continue without the avatar; don't block on it.
 
 See `AGENTS.md` for the full HTTP contract and the `avatar` CLI reference.

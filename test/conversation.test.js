@@ -21,6 +21,21 @@ test("append stores emoji", () => {
   assert.equal(m.text, "");
 });
 
+test("append attaches optional image/url only when provided", () => {
+  const c = new Conversation();
+  const plain = c.append({ source: "user", text: "hi" });
+  assert.equal("image" in plain, false);
+  assert.equal("url" in plain, false);
+  const img = c.append({
+    source: "user",
+    text: "look",
+    image: "/abs/uploads/x.png",
+    url: "/uploads/x.png",
+  });
+  assert.equal(img.image, "/abs/uploads/x.png");
+  assert.equal(img.url, "/uploads/x.png");
+});
+
 test("getSince returns only messages after the cursor plus latest cursor", () => {
   const c = new Conversation();
   c.append({ source: "agent", text: "1" });

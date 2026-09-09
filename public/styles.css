@@ -212,3 +212,22 @@ body {
 .msg__text {
   white-space: pre-wrap;
 }
+
+.msg__thumb {
+  display: inline-block;
+  margin-top: 0.25rem;
+}
+
+.msg__thumb img {
+  max-width: 220px;
+  max-height: 160px;
+  border-radius: 8px;
+  border: 1px solid #303655;
+  display: block;
+  object-fit: contain;
+  background: #0d0f1a;
+}
+
+.msg__thumb:hover img {
+  border-color: var(--accent);
+}

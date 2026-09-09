@@ -5,6 +5,8 @@
 //   GET  /api/messages?since=  poll conversation after a cursor
 //   POST /api/user/messages   UI posts the human's { text } reply
 //   GET  /api/ask             ask a question and long-poll for the human's reply
+//   POST /api/upload          UI uploads a pasted/dropped image → user message
+//   GET  /api/stream          SSE stream of messages
 //
 // The optional `onMessage` callback is invoked with each stored message so the
 // caller can broadcast it (e.g. over the SSE hub).
@@ -12,11 +14,25 @@
 import express from "express";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
+import { randomUUID } from "node:crypto";
+import { writeFileSync } from "node:fs";
+import { ensureUploadsDir } from "./config.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const MAX_EMOJI_LEN = 16; // a couple of codepoints incl. modifiers/ZWJ sequences
 const ASK_MAX_TIMEOUT_MS = 300_000; // cap a single /api/ask wait at 5 minutes
+const MAX_UPLOAD_BYTES = 10 * 1024 * 1024; // 10 MB cap on uploads
+
+// Allowed image content types → file extension.
+const IMAGE_EXT = {
+  "image/png": ".png",
+  "image/jpeg": ".jpg",
+  "image/gif": ".gif",
+  "image/webp": ".webp",
+  "image/bmp": ".bmp",
+  "image/svg+xml": ".svg",
+};
 
 /** Normalize/validate an emoji field. Returns a trimmed string or null. */
 function normalizeEmoji(value) {
@@ -40,13 +56,18 @@ export function createApp({ conversation, onMessage = () => {}, hub = null }) {
   const askWaiters = new Set();
 
   /** Record a user message and wake any pending /api/ask waiters. */
-  function recordUserMessage(text) {
-    const message = conversation.append({ source: "user", text });
+  function recordUserMessage(fields) {
+    const message = conversation.append({ source: "user", ...fields });
     onMessage(message);
     for (const resolve of askWaiters) resolve(message);
     askWaiters.clear();
     return message;
   }
+
+  // Serve uploaded files (pasted/dropped images) so the browser can show them
+  // and remote agents can fetch them by URL.
+  const uploadsDir = ensureUploadsDir();
+  app.use("/uploads", express.static(uploadsDir));
 
   // Static UI. Disable caching so frontend edits show up on a plain refresh
   // (this is a local dev accessory; assets are tiny).
@@ -95,8 +116,52 @@ export function createApp({ conversation, onMessage = () => {}, hub = null }) {
     if (text === "") {
       return res.status(400).json({ error: "Missing or empty 'text'." });
     }
-    res.status(201).json(recordUserMessage(text));
+    res.status(201).json(recordUserMessage({ text }));
   });
+
+  // UI uploads a pasted/dropped image. The raw image bytes are the request body
+  // and the Content-Type header names the image type. On success the file is
+  // saved and a user message is recorded carrying both an absolute filesystem
+  // `image` path (for local agents to read) and a browser-fetchable `url`.
+  // An optional `?text=` query provides a caption spoken/shown with the image.
+  app.post(
+    "/api/upload",
+    express.raw({ type: "image/*", limit: MAX_UPLOAD_BYTES }),
+    (req, res) => {
+      const contentType = (req.headers["content-type"] || "")
+        .split(";")[0]
+        .trim()
+        .toLowerCase();
+      const ext = IMAGE_EXT[contentType];
+      if (!ext) {
+        return res
+          .status(415)
+          .json({ error: `Unsupported image type: ${contentType || "none"}` });
+      }
+      if (!Buffer.isBuffer(req.body) || req.body.length === 0) {
+        return res.status(400).json({ error: "Empty upload body." });
+      }
+
+      // Safe, generated filename — never trust a client-supplied name.
+      const name = `${randomUUID()}${ext}`;
+      const absPath = join(uploadsDir, name);
+      try {
+        writeFileSync(absPath, req.body);
+      } catch {
+        return res.status(500).json({ error: "Failed to store upload." });
+      }
+
+      const url = `/uploads/${name}`;
+      const caption =
+        typeof req.query.text === "string" ? req.query.text.trim() : "";
+      const message = recordUserMessage({
+        text: caption,
+        image: absPath,
+        url,
+      });
+      res.status(201).json(message);
+    },
+  );
 
   // Ask a question and block until the human replies (or timeout).
   // One HTTP round trip = one full voice Q&A. Query params:

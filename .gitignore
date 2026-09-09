@@ -29,4 +29,8 @@ build/
 tmp/
 *.tmp
 
+# Runtime uploads (if LOCUTUS_DATA_DIR points into the repo; default is os tmpdir)
+uploads/
+.locutus/
+
 # Note: .kiro/ and .opencode/ agent configs are intentionally committed.

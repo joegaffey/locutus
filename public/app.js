@@ -210,6 +210,22 @@ function addToTranscript(message) {
   text.textContent = prefix + (message.text || "");
 
   li.append(who, text);
+
+  // If the message carries an image, show a thumbnail (click opens full size).
+  if (message.url) {
+    const link = document.createElement("a");
+    link.href = message.url;
+    link.target = "_blank";
+    link.rel = "noopener";
+    link.className = "msg__thumb";
+    const img = document.createElement("img");
+    img.src = message.url;
+    img.alt = message.text ? message.text : "pasted image";
+    img.loading = "lazy";
+    link.append(img);
+    li.append(link);
+  }
+
   els.transcriptList.append(li);
   els.transcriptList.scrollTop = els.transcriptList.scrollHeight;
 }
@@ -284,6 +300,48 @@ els.typeForm.addEventListener("submit", (e) => {
   e.preventDefault();
   sendUserMessage(els.typeInput.value);
   els.typeInput.value = "";
+});
+
+// ---------------------------------------------------------------------------
+// Paste an image into the room → upload it → appears as a user message with a
+// thumbnail; the agent receives the file path/URL. (A CLI can't accept a pasted
+// image; the browser bridges it — see specs/proposals.md P2.)
+// ---------------------------------------------------------------------------
+async function uploadImage(blob, caption = "") {
+  setStatus("Uploading image…");
+  try {
+    const qs = caption ? `?text=${encodeURIComponent(caption)}` : "";
+    const res = await fetch(`/api/upload${qs}`, {
+      method: "POST",
+      headers: { "Content-Type": blob.type || "image/png" },
+      body: blob,
+    });
+    if (!res.ok) {
+      setStatus("Image upload failed.");
+      return;
+    }
+    setStatus("Image sent to the agent.");
+  } catch {
+    setStatus("Image upload failed. Check the connection.");
+  }
+}
+
+document.addEventListener("paste", (e) => {
+  const items = e.clipboardData && e.clipboardData.items;
+  if (!items) return;
+  for (const item of items) {
+    if (item.kind === "file" && item.type.startsWith("image/")) {
+      const blob = item.getAsFile();
+      if (blob) {
+        e.preventDefault();
+        // Use any text already typed in the reply box as the caption.
+        const caption = els.typeInput.value.trim();
+        els.typeInput.value = "";
+        uploadImage(blob, caption);
+      }
+      return;
+    }
+  }
 });
 
 // ---------------------------------------------------------------------------
