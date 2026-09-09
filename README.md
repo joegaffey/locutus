@@ -203,6 +203,34 @@ copilot --allow-tool='shell(curl)' --allow-tool='shell(avatar)'
 (Or approve each command interactively, or narrate a headless run with
 `copilot -p "…" | avatar pipe`.)
 
+## Pasting images (and other rich input)
+
+A terminal can't accept a pasted image — the browser can. **Paste a screenshot**
+(Ctrl/Cmd-V) into the room and it's uploaded, shown as a thumbnail in the transcript,
+and delivered to the agent as a user message carrying the image's **file path** (and a
+URL). A local agent just reads that path with its normal file-read tool to see it —
+great for "here's a screenshot, [question]".
+
+Uploads are stored in `<os tmpdir>/locutus/uploads` by default; override with the
+`LOCUTUS_DATA_DIR` environment variable.
+
+**Frictionless reads (per-tool setup).** For a hands-free agent, reading the uploaded
+file should not trigger an approval prompt each time. This repo pre-approves reads of the
+uploads dir for the tools whose syntax is verified:
+
+- **Kiro** — `toolsSettings.fs_read.allowedPaths` in `.kiro/agents/avatar.json`.
+- **Claude Code** — `permissions.allow` `Read(...)` rules in `.claude/settings.json`.
+- **opencode** — `permission.external_directory` in `opencode.json`.
+
+**Workaround / caveats.** The pre-approved path is the Linux default
+`/tmp/locutus/uploads` (plus a `~/.locutus/uploads` fallback). If reads still prompt:
+
+- On **macOS** `os.tmpdir()` isn't `/tmp`, and if you set `LOCUTUS_DATA_DIR` the path
+  changes — so set `LOCUTUS_DATA_DIR` to a stable path and add that path to your tool's
+  read-allow rule. (Restart the agent so the config reloads.)
+- For **Gemini CLI, Copilot CLI, and Codex**, the uploads-read allow rule isn't bundled
+  yet — just approve the read when prompted, or add a read-path rule in that tool.
+
 ## Requirements & notes
 
 - **Node.js LTS** for the server.
