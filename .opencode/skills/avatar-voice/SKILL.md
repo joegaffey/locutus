@@ -73,6 +73,7 @@ some-command | ./bin/avatar pipe
 - Narration is optional; still do the task and report normally in chat.
 - Pasted images: a user message may include an `image` (absolute file path) when the human
   pastes a screenshot. If present, read that path with your file-read tool to view it.
+- Stay in the conversation: once you're talking through the avatar, keep the loop going. After each `/api/ask` returns — including a 408 timeout — immediately ask again so the human is never left waiting on a silent avatar. Only stop the loop when the task is truly finished or the human tells you to stop. Use a long `timeout` (up to 300s) to avoid idle gaps.
 - If the server is unreachable, continue without the avatar rather than blocking.
 
 ## Suggested emoji

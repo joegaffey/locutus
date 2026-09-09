@@ -219,6 +219,11 @@ curl -sN http://localhost:3000/api/stream
 - **Keep it speakable.** Short plain sentences beat large code blocks or tables.
 - **The human needs time.** They click the mic and speak; expect latency. `avatar listen`
   polls about once a second.
+- **Stay in the conversation.** Once you're talking through the avatar, keep the loop
+  going: after each `avatar ask` / `/api/ask` returns — including a timeout (exit 1 / `408`)
+  — ask again so the human is never left waiting on a silent avatar. Only stop when the
+  task is truly finished or the human tells you to stop. Use a long `timeout` (up to 300s)
+  to avoid idle gaps.
 - **State is in-memory (MVP).** Restarting the server clears the conversation.
 
 ## Errors
