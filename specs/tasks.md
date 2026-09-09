@@ -200,22 +200,37 @@ Milestone 0 works end to end.
     open-ended interactive UI at runtime. A2UI can layer over AG-UI if that need
     arises; treat as optional, not core.
 
-- [ ] Renderable content types via pluggable DSL renderers
-  - **Idea:** let messages carry a content `type` + payload so the browser can render
-    rich, declarative third-party DSLs — while voice narrates a short caption. This is
-    more natural for agents (emit a standard spec) and cheaper than a generic UI
-    protocol.
-  - **Shape:** extend the message with an optional `type` + payload, e.g.
-    `{ "type": "vega-lite", "spec": {…} }`, `{ "type": "mermaid", "source": "…" }`,
-    `{ "type": "markdown", "text": "…" }`. Default `text`/`emoji` messages are spoken
-    as today; typed messages render below the avatar. The agent may still send a short
-    spoken caption alongside (voice narrates, visual renders).
-  - **Frontend:** a renderer registry keyed by `type` (text/emoji default, `vega-lite`
-    → Vega-Embed, `mermaid`, `markdown`, …). Unknown types fall back to text/notice.
-    **Vega-Lite is the reference first renderer.**
-  - **Constraints:** treat all payloads as UNTRUSTED (sanitize Markdown/HTML; prefer
-    declarative/sandboxable Vega-Lite over full Vega expression features); lazy-load
-    renderer libraries per type so the base voice UI stays light.
-  - **Why this over A2UI for content:** domain DSLs + a small renderer registry cover
-    the real cases (charts, diagrams, tables, math) without adopting a generic
-    component protocol; keeps the curl/JSON agent contract simple and voice-first.
+- [ ] Renderable content types (content-typed message keys + built-in renderers)
+  - **Idea:** let a message's **content key name the content type**, so the browser can
+    render media and declarative DSLs while voice narrates a short caption. Cleaner than
+    a separate `type`+payload envelope, and additive to today's `text`/`emoji`.
+  - **Message model:** the payload key *is* the type —
+    `{ "text": "…" }` (spoken, as today), `{ "image": "https://…/chart.png" }`,
+    `{ "video": "https://…/demo.mp4" }`, `{ "vega": { …spec… } }`, plus `mermaid`,
+    `markdown`, etc. `text` and `emoji` may accompany any content key (avatar speaks the
+    caption, the content renders below). **One content key per message** besides
+    text/emoji (define precedence or reject if multiple). Validation on
+    `POST /api/messages` becomes "at least one recognized content key present."
+  - **Renderers are BUILT-IN, not pluggable** — a fixed set the app ships. Frontend has
+    a renderer registry keyed on which content field is present; unknown keys fall back
+    to a caption/link/notice. **`image` is the smallest first renderer; `vega`
+    (Vega-Lite) the first DSL.**
+  - **Capability discovery — B1 (server-declared):** add `GET /api/capabilities`
+    returning the server's declared, built-in content-type list (a constant matching the
+    bundled UI), e.g. `{ "contentTypes": ["text","emoji","image","vega"] }`. This lets
+    **AGENTS.md stay concise** — it references `/api/capabilities` as the source of truth
+    instead of enumerating (and drifting on) the type list. (B2 — browsers report their
+    renderers and the server intersects — was considered but rejected: renderers are
+    built-in and ship with the server, so a server-declared constant is honest and far
+    simpler. Revisit only if pluggable renderers or version-skew handling are needed.)
+  - **Server stays dumb:** stores/broadcasts whatever content keys arrive (light
+    validation); the browser owns rendering. Rides the existing SSE channel.
+  - **Constraints:** treat all payloads as UNTRUSTED (validate `image`/`video` as URLs/
+    data-URIs; sanitize Markdown/HTML; prefer sandboxable Vega-Lite over full Vega).
+    Transcript panel shows a sensible representation (thumbnail/link/caption). `/api/ask`
+    remains speech-only.
+  - **Why this over A2UI for content:** built-in content types + a small renderer
+    registry cover the real cases (charts, diagrams, media, tables, math) without a
+    generic component protocol; keeps the curl/JSON contract simple and voice-first.
+  - **Deferred:** design locked; implement alongside the first renderers (`image`, then
+    `vega`).
