@@ -8,6 +8,9 @@
       "allowedCommands": [
         "\\Acurl [^`$;|&<>]*http://localhost:3000/api/[^`$;|&<>]*\\z"
       ]
+    },
+    "fs_read": {
+      "allowedPaths": ["/tmp/locutus/uploads/**", "~/.locutus/uploads/**"]
     }
   }
 }

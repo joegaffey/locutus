@@ -120,6 +120,23 @@ user sets, applied server-side, with precedence: UI setting → `LOCUTUS_DATA_DI
 default. That likely arrives with a general settings mechanism (none exists yet), so it
 is deferred; the single config point makes adding it later a small change.
 
+**Frictionless reads (the tool-approval gap).** For paste-to-agent to be truly
+hands-free, the agent must read the uploaded file **without a per-read approval prompt**.
+That means pre-approving *reads of the uploads dir* in each tool's config — separate from
+the `curl`/`avatar` command trust:
+- **Kiro:** `toolsSettings.fs_read.allowedPaths` includes the uploads dir. ✅ added
+- **Claude Code:** `permissions.allow` `Read(<uploads>/**)`. ✅ added (absolute-path glob
+  syntax inferred from docs — verify in practice).
+- **opencode:** reads default to *allow*, but the uploads dir is outside the workspace,
+  so an `permission.external_directory` allow rule is needed. ✅ added
+- **Gemini / Copilot / Codex:** their read gating (policy engine / `--allow-tool` /
+  sandbox) differs and the exact path-allow syntax wasn't verified — TODO, or the user
+  approves reads at runtime.
+- **Caveat:** the allowed path is hardcoded to the Linux default `/tmp/locutus/uploads`
+  (+ a `~/.locutus/uploads` fallback). macOS `os.tmpdir()` differs, and
+  `LOCUTUS_DATA_DIR` changes it — a fully robust fix is to set `LOCUTUS_DATA_DIR` to a
+  stable known path and allow that.
+
 **Security.** Untrusted uploads — validate MIME/size, cap size (10 MB), sanitize/
 generate filenames (UUID, never client-supplied), store outside any executable path,
 define retention/cleanup, and note the agent will read whatever path it's handed.

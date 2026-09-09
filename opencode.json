@@ -4,6 +4,10 @@
     "skill": {
       "avatar-voice": "allow"
     },
+    "external_directory": {
+      "/tmp/locutus/uploads/**": "allow",
+      "~/.locutus/uploads/**": "allow"
+    },
     "bash": {
       "*": "ask",
       "curl * http://localhost:3000/api/*": "allow",

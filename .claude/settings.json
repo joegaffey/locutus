@@ -14,7 +14,10 @@
       "Bash(./bin/avatar state *)",
       "Bash(./bin/avatar ask *)",
       "Bash(./bin/avatar listen*)",
-      "Bash(./bin/avatar pipe*)"
+      "Bash(./bin/avatar pipe*)",
+      "Read(/tmp/locutus/uploads/**)",
+      "Read(//tmp/locutus/uploads/**)",
+      "Read(~/.locutus/uploads/**)"
     ]
   }
 }
